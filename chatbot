@@ -1,0 +1,165 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chatbot-nola",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        32,
+        0
+      ],
+      "id": "a90b2a5b-50ef-4b8a-9d10-8539b7acd6d0",
+      "name": "Webhook",
+      "webhookId": "4749a601-c60f-4e60-b669-15aa9cd7cc0a"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Q5Q4tQxIQRKPi5N5TGV8rLcR1Hky5tIjPaKszMoHnBw",
+          "mode": "list",
+          "cachedResultName": "Base de Conhecimento - Nola CS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Q5Q4tQxIQRKPi5N5TGV8rLcR1Hky5tIjPaKszMoHnBw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1061436795,
+          "mode": "list",
+          "cachedResultName": "Página2",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Q5Q4tQxIQRKPi5N5TGV8rLcR1Hky5tIjPaKszMoHnBw/edit#gid=1061436795"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        208,
+        0
+      ],
+      "id": "99b02e5d-3aec-4252-8230-f09fe784a649",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "8FIDoKWRc8mZnkPG",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nlet knowledge = '';\n\nfor (const item of items) {\n  knowledge += `Pergunta: ${item.json['Pergunta']}\\nResposta: ${item.json['Resposta ']}\\n\\n`;\n}\n\nconst mensagem = $('Webhook').first().json.body.message;\n\nconst content = \"Você é assistente de suporte da Nola. Responda com base nessa base de conhecimento:\\n\\n\" + knowledge + \"\\n\\nImportante: responda de forma direta e natural, sem usar '=' no início da resposta. Se não souber, diga que vai acionar o time de CS.\";\n\nreturn [{\n  json: {\n    model: \"llama-3.3-70b-versatile\",\n    messages: [\n      { role: \"system\", content: content },\n      { role: \"user\", content: mensagem }\n    ]\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "c50bacb6-8ff2-4c54-a3e8-4ec6bd2fe05a",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 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"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "=json",
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        672,
+        0
+      ],
+      "id": "1fa23b83-3257-4709-9d0c-ad0b79585be5",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "=={{ $json.choices[0].message.content }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        848,
+        0
+      ],
+      "id": "f10024c6-8546-4e92-a2a6-f87dee1f71cb",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0e94a9e6d96be1ad25504683ff28633159b7e6007424510000f5738b23553434"
+  }
+}
